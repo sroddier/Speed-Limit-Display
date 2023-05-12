@@ -3,7 +3,7 @@
 ## Introduction
 
 This project is a simple web page that displays the maximum speed limit at your current location, using data from OpenStreetMap. It also features a radar detection system where it notifies if there is a speed camera within a user-specified range.
-
+![Usage in a Tesla Model S from 2014](TeslaApi.jpeg)
 ## How it works
 
 The web page retrieves your geolocation data and then sends a query to the Overpass API, which provides data from OpenStreetMap. The query looks for highway data around your current location and retrieves the maximum speed limit for that location.
