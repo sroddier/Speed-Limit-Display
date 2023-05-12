@@ -3,7 +3,7 @@
 ## Introduction 
 
 This project is a simple web page that displays the maximum speed limit at your current location, using data from OpenStreetMap. It also features a radar detection system where it notifies if there is a speed camera within a user-specified range.
-![Usage in a Tesla Model S from 2014](TeslaApi2.jpeg)
+
 <img src="TeslaApi2.jpeg" alt="Usage in a Tesla Model S from 2014" width="200"/>
 ## How it works
 
