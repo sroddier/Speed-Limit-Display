@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vitesse maximale autorisée</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #000000;
+            color: gray;
+        }
+		
+        #speed {
+            font-size: 80px;
+            font-weight: bold;
+            margin-top: 50px;
+            color: #ffffff;
+        }
+		
+		#position {
+            font-size: 10px;
+            font-weight: bold;
+            margin-top: 50px;
+        }
+        #refresh {
+        font-size: 8px;
+        margin-top: 10px;
+		}
+		
+		#radar {
+        font-size: 25px;
+        margin-top: 10px;
+        color: #ffffff;
+		}
+	#slider{
+	    font-size: 15px;
+        margin-top: 12px;
+		}
+	
+	
+	
+	
+    #signature {
+        font-size: 10px;
+        margin-top: 10px;
+    }
+    </style>
+</head>
+<body>
+    <h1>Vitesse maximale autorisée</h1>
+    <div id="speed">-- km/h</div>
+	<div id="position">pos: --</div>
+	<div id="radar">--</div>
+	<!-- Slider for radar detection range / Curseur pour la distance de détection des radars -->
+	<div id="slider">
+    <input type="range" min="200" max="10000" value="1000" step="100" class="slider" id="myRange">
+    <p>Distance recherche radar: <span id="demo"></span></p>
+</div>
+    <div id="signature">by Stéphane Roddier sroddier@gmail.com <br> openstreetmap.org</div>
+	<div id="refresh">--</div>
+
+
+    
+    <script>
+        // Global variables for DOM elements / Variables globales pour les éléments DOM
+        const radarDetectionSlider = document.getElementById('myRange');
+        const speedDiv = document.getElementById('speed');
+        const positionDiv = document.getElementById('position');
+        const radarDiv = document.getElementById('radar');
+        const refreshDiv = document.getElementById('refresh');
+        const demoDiv = document.getElementById('demo');
+
+        const overpassApiUrl = 'https://overpass-api.de/api/interpreter';
+
+        // Fetch speed limit from Overpass API / Récupérer la limite de vitesse de l'API Overpass
+        async function fetchSpeedLimit(latitude, longitude) {
+            const query = `
+                [out:json];
+                way[highway](around:25, ${latitude}, ${longitude});
+                out body;
+            `;
+            const response = await fetch(overpassApiUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                },
+                body: `data=${encodeURIComponent(query)}`
+            });
+            return await response.json();
+        }
+		
+        // Fetch radar data from Overpass API / Récupérer les données du radar de l'API Overpass
+		async function fetchRadar(latitude, longitude, distance) {
+            const query = `
+                [out:json];
+                nwr[highway=speed_camera](around:${distance}, ${latitude}, ${longitude});
+                out body;
+            `;
+            const response = await fetch(overpassApiUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                },
+                body: `data=${encodeURIComponent(query)}`
+            });
+            return await response.json();
+        }
+
+        // Extract max speed from OSM data / Extraire la vitesse maximale
+        // des données OSM
+        function getMaxSpeedFromOsmData(osmData) {
+            if (osmData && osmData.elements) {
+                for (const element of osmData.elements) {
+                    if (element.tags && element.tags.maxspeed) {
+                        return parseInt(element.tags.maxspeed, 10);
+                    }
+                }
+            }
+            return null;
+        }
+		
+        // Extract radar data from OSM data / Extraire les données du radar des données OSM
+		function getRadar(osmData) {
+            if (osmData && osmData.elements) {
+                for (const element of osmData.elements) {
+                    if (element.tags && element.tags.maxspeed) {
+                        return parseInt(element.tags.maxspeed, 10);
+                    }
+                    if (element.tags && element.tags.direction) {
+                        return element.tags.ref+" (Radar feux ?)";
+                    }
+                    
+                }
+            }
+            return null;
+        }
+
+        // Update speed and radar data / Mettre à jour les données de vitesse et du radar
+        async function updateSpeed() {
+			refreshDiv.innerText = 'rafraichissement';
+            navigator.geolocation.getCurrentPosition(async position => {
+                const latitude = position.coords.latitude;
+                const longitude = position.coords.longitude;
+
+                try {
+                    const osmData = await fetchSpeedLimit(latitude, longitude);
+                    const maxSpeed = getMaxSpeedFromOsmData(osmData);
+					
+                    const radarDetectionDistance = document.getElementById('myRange').value;
+                    const osmData2 = await fetchRadar(latitude, longitude, radarDetectionDistance);
+                    const maxSpeedRadar = getRadar(osmData2);
+                    
+                    if (maxSpeed) {
+                        document.getElementById('speed').innerText = `${maxSpeed} km/h`;
+						document.getElementById('position').innerText = `${latitude},${longitude}`;
+					
+                    } else {
+                        document.getElementById('speed').innerText = `Inconnu`;
+                        document.getElementById('position').innerText = `${latitude},${longitude}`;
+					
+                    }
+                    if (maxSpeedRadar){
+                        document.getElementById('radar').innerText = `Radar : ${maxSpeedRadar}`;
+                    }else{document.getElementById('radar').innerText = `--`; }
+                
+                } catch (error) {
+                    console.error(error);
+                    document.getElementById('speed').innerText = 'Erreur';
+                }
+				document.getElementById('refresh').innerText = '';
+            });
+        }
+		updateSpeed();
+		 // Update the displayed radar detection distance / Mettre à jour la distance de détection du radar affichée
+		let slider = document.getElementById("myRange");
+        let output = document.getElementById("demo");
+        output.innerHTML = slider.value;
+        slider.oninput = function() {
+         output.innerHTML = this.value;
+}
+		
+        // Update speed and radar data every 4 seconds / Mettre à jour les données de vitesse et du radar toutes les 4 secondes
+        setInterval(updateSpeed, 4000);
+    </script>
+</body>
+</html>
