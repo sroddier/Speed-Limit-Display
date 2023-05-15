@@ -172,6 +172,38 @@
 				document.getElementById('refresh').innerText = '';
             });
         }
+        //debut de partie maintien ecran allumé  
+        let wakeLock = null;
+
+// Fonction pour demander le verrouillage de veille
+const requestWakeLock = async () => {
+  try {
+    wakeLock = await navigator.wakeLock.request('screen');
+    wakeLock.addEventListener('release', () => {
+      console.log('Wake Lock a été libéré');
+    });
+    console.log('Wake Lock est actif');
+  } catch (err) {
+    console.error(`${err.name}, ${err.message}`);
+  }
+};
+
+// Lorsque l'onglet devient inactif, tentez de demander à nouveau le verrouillage de veille.
+document.addEventListener('visibilitychange', () => {
+  if (wakeLock !== null && document.visibilityState === 'visible') {
+    requestWakeLock();
+  }
+});
+
+// Demandez le verrouillage de veille au chargement de la page
+window.addEventListener('load', requestWakeLock);
+
+        
+//fin de partie maintien ecran allumé        
+        
+        
+        
+        
 		updateSpeed();
 		 // Update the displayed radar detection distance / Mettre à jour la distance de détection du radar affichée
 		let slider = document.getElementById("myRange");
